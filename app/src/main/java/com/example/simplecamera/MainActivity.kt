@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        Log.d(TAG, "onCreate")
 
         previewView = findViewById(R.id.previewView)
         captureButton = findViewById(R.id.captureButton)
@@ -62,7 +63,24 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        captureButton.setOnClickListener { takePhoto() }
+        captureButton.setOnClickListener {
+            // 按钮点击动画
+            it.animate()
+                .scaleX(0.9f)
+                .scaleY(0.9f)
+                .setDuration(100)
+                .withEndAction {
+                    it.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(100)
+                        .start()
+                }
+                .start()
+            // 立即震动反馈
+            vibratePhone()
+            takePhoto()
+        }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -115,14 +133,17 @@ class MainActivity : AppCompatActivity() {
                     preview,
                     imageCapture
                 )
+                Log.d(TAG, "相机绑定成功")
             } catch(exc: Exception) {
                 Log.e(TAG, "相机绑定失败", exc)
+                Toast.makeText(baseContext, "相机初始化失败: ${exc.message}", Toast.LENGTH_LONG).show()
             }
 
         }, ContextCompat.getMainExecutor(this))
     }
 
     private fun takePhoto() {
+        Log.d(TAG, "开始拍照")
         val imageCapture = imageCapture ?: return
 
         // 创建时间戳文件名
@@ -154,7 +175,7 @@ class MainActivity : AppCompatActivity() {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
                     Log.e(TAG, "拍照失败: ${exc.message}", exc)
-                    Toast.makeText(baseContext, "拍照失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(baseContext, "拍照失败: ${exc.message}", Toast.LENGTH_LONG).show()
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
@@ -163,7 +184,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, "$msg: $savedUri")
                     
-                    // 震动反馈
+                    // 震动反馈（已经在点击时震动，这里再次震动作为成功反馈）
                     vibratePhone()
                 }
             }
